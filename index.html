@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  ╔═══════════════════════════════════════════════════════════════╗
+  ║            FlockPro Admin Dashboard v1.2 - MOBILE             ║
+  ║              Complete User & Data Management System           ║
+  ╚═══════════════════════════════════════════════════════════════╝
+  
+  FEATURES:
+  - Fully mobile responsive design
+  - View all users in a mobile-friendly card layout
+  - Freeze/unfreeze user accounts
+  - Delete user accounts completely
+  - View user statistics
+  - Bulk operations
+  - Export user data to CSV
+  - Manage approved emails for invite-only registration
+  - Toggle invite-only mode ON/OFF
+  
+  MOBILE OPTIMIZATIONS:
+  - Card layout for users on mobile (instead of table)
+  - Touch-friendly buttons (44px minimum)
+  - Responsive navigation and filters
+  - Optimized modals for small screens
+  - Horizontal scrolling for table on desktop
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FlockPro Admin Dashboard</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 12px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Header - Mobile Responsive */
+    .header {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      color: #1a202c;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .header-actions span {
+      font-size: 13px;
+      color: #64748b;
+      flex: 1 1 100%;
+      margin-bottom: 8px;
+    }
+    
+    /* Desktop header */
+    @media (min-width: 768px) {
+      body {
+        padding: 20px;
+      }
+      
+      .header {
+        padding: 24px 32px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .header h1 {
+        font-size: 28px;
+        margin-bottom: 0;
+        gap: 12px;
+      }
+      
+      .header-actions {
+        flex-wrap: nowrap;
+      }
+      
+      .header-actions span {
+        flex: 0 0 auto;
+        margin-bottom: 0;
+        font-size: 14px;
+      }
+    }
+    
+    /* Stats Cards - Mobile Responsive */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 6px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+    
+    @media (min-width: 640px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .stat-card {
+        padding: 20px;
+      }
+      
+      .stat-card h3 {
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      
+      .stat-card .value {
+        font-size: 32px;
+      }
+    }
+    
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .card-header h3 {
+      font-size: 18px;
+      color: #1a202c;
+      margin-bottom: 4px;
+    }
+    
+    .card-header p {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    .card-body {
+      padding: 16px;
+    }
+    
+    @media (min-width: 768px) {
+      .card {
+        border-radius: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .card-header {
+        padding: 24px 32px;
+      }
+      
+      .card-header h3 {
+        font-size: 20px;
+      }
+      
+      .card-header p {
+        font-size: 14px;
+      }
+      
+      .card-body {
+        padding: 24px 32px;
+      }
+    }
+    
+    /* Buttons - Mobile Touch-Friendly */
+    .btn {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px; /* Touch target */
+      white-space: nowrap;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    
+    .btn-secondary:active {
+      background: #e2e8f0;
+    }
+    
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .btn-danger:active {
+      background: #fecaca;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    @media (min-width: 768px) {
+      .btn {
+        padding: 10px 20px;
+        gap: 8px;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+      
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      
+      .btn-danger:hover {
+        background: #fecaca;
+      }
+    }
+    
+    /* Search and Filters - Mobile Responsive */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .search-box {
+      width: 100%;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 44px;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+    
+    .filter-tab {
+      padding: 10px 16px;
+      border: 2px solid #e2e8f0;
+      background: white;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .filter-tab:active {
+      transform: scale(0.98);
+    }
+    
+    .filter-tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    
+    .control-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .control-buttons .btn {
+      flex: 1 1 auto;
+      min-width: 120px;
+    }
+    
+    @media (min-width: 768px) {
+      .controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .search-box {
+        flex: 1;
+        min-width: 200px;
+      }
+      
+      .filter-tab:hover {
+        border-color: #667eea;
+        color: #667eea;
+      }
+      
+      .filter-tab.active:hover {
+        color: white;
+      }
+      
+      .control-buttons {
+        flex-wrap: nowrap;
+      }
+      
+      .control-buttons .btn {
+        flex: 0 0 auto;
+      }
+    }
+    
+    /* Mobile User Cards (instead of table on small screens) */
+    .user-cards {
+      display: block;
+    }
+    
+    .user-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .user-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+    
+    .user-card-info {
+      flex: 1;
+    }
+    
+    .user-card-email {
+      font-weight: 600;
+      color: #1a202c;
+      font-size: 14px;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    
+    .user-card-farm {
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    
+    .user-card-meta {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    
+    .user-card-meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .user-card-meta-label {
+      color: #94a3b8;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    
+    .user-card-meta-value {
+      color: #334155;
+      font-weight: 500;
+    }
+    
+    .user-card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    /* Table - Desktop Only */
+    .table-container {
+      display: none;
+    }
+    
+    @media (min-width: 1024px) {
+      .user-cards {
+        display: none;
+      }
+      
+      .table-container {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+      
+      th {
+        background: #f8fafc;
+        padding: 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
+      
+      td {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+        color: #334155;
+      }
+      
+      tr:hover {
+        background: #f8fafc;
+      }
+    }
+    
+    /* Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-frozen {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .status-suspended {
+      background: #fed7aa;
+      color: #92400e;
+    }
+    
+    .status-deleted {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    /* Action Buttons */
+    .action-btns {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    .action-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .action-btn-view {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    
+    .action-btn-view:active {
+      background: #c7d2fe;
+    }
+    
+    .action-btn-freeze {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .action-btn-freeze:active {
+      background: #bfdbfe;
+    }
+    
+    .action-btn-unfreeze {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .action-btn-unfreeze:active {
+      background: #bbf7d0;
+    }
+    
+    .action-btn-delete {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .action-btn-delete:active {
+      background: #fecaca;
+    }
+    
+    @media (min-width: 768px) {
+      .action-btn-view:hover {
+        background: #c7d2fe;
+      }
+      
+      .action-btn-freeze:hover {
+        background: #bfdbfe;
+      }
+      
+      .action-btn-unfreeze:hover {
+        background: #bbf7d0;
+      }
+      
+      .action-btn-delete:hover {
+        background: #fecaca;
+      }
+    }
+    
+    /* Modal - Mobile Responsive */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    
+    .modal.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      font-size: 20px;
+      color: #1a202c;
+    }
+    
+    .modal-close {
+      background: #f1f5f9;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .modal-close:active {
+      background: #e2e8f0;
+    }
+    
+    @media (min-width: 768px) {
+      .modal {
+        padding: 20px;
+      }
+      
+      .modal-content {
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+      
+      .modal-header h2 {
+        font-size: 24px;
+      }
+      
+      .modal-close:hover {
+        background: #e2e8f0;
+      }
+    }
+    
+    /* Info Grid - Mobile Responsive */
+    .info-grid {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+      color: #1a202c;
+      font-size: 14px;
+      word-break: break-word;
+    }
+    
+    @media (min-width: 768px) {
+      .info-grid {
+        gap: 16px;
+      }
+      
+      .info-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 16px;
+        flex-direction: row;
+      }
+      
+      .info-label {
+        font-size: 14px;
+      }
+    }
+    
+    /* Toast - Mobile Responsive */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: #1a202c;
+      color: white;
+      padding: 14px 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .toast.success {
+      background: #059669;
+    }
+    
+    .toast.error {
+      background: #dc2626;
+    }
+    
+    .toast.warning {
+      background: #f59e0b;
+    }
+    
+    @media (min-width: 640px) {
+      .toast {
+        bottom: 24px;
+        left: auto;
+        right: 24px;
+        max-width: 400px;
+        padding: 16px 24px;
+      }
+    }
+    
+    /* Login Screen - Mobile Responsive */
+    .login-screen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-screen.show {
+      display: flex;
+    }
+    
+    .login-box {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .login-box h2 {
+      font-size: 24px;
+      color: #1a202c;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    
+    .login-box p {
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    @media (min-width: 640px) {
+      .login-box {
+        padding: 48px;
+      }
+      
+      .login-box h2 {
+        font-size: 28px;
+      }
+      
+      .login-box p {
+        margin-bottom: 32px;
+      }
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 14px;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 44px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+    
+    .form-group small {
+      display: block;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 12px;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    
+    @media (min-width: 768px) {
+      .empty-state {
+        padding: 48px 24px;
+        font-size: 16px;
+      }
+    }
+    
+    /* Bulk Actions - Mobile Responsive */
+    .bulk-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .bulk-actions label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 13px;
+      flex: 1 1 100%;
+      margin-left: 4px;
+    }
+    
+    .bulk-actions .btn {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 12px;
+      padding: 10px 12px;
+    }
+    
+    @media (min-width: 640px) {
+      .bulk-actions {
+        flex-wrap: nowrap;
+        padding: 16px;
+      }
+      
+      .bulk-actions label {
+        flex: 0 0 auto;
+        font-size: 14px;
+      }
+      
+      .bulk-actions .btn {
+        font-size: 14px;
+        padding: 12px 16px;
+      }
+    }
+    
+    /* User checkbox */
+    .user-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    /* Toggle Switch Styles */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      transition: .4s;
+      border-radius: 28px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+    
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+    }
+    
+    .toggle-description {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+      flex: 1 1 100%;
+    }
+    
+    .toggle-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    
+    .toggle-status.enabled {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .toggle-status.disabled {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    @media (min-width: 768px) {
+      .toggle-container {
+        flex-wrap: nowrap;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .toggle-label {
+        font-size: 15px;
+      }
+      
+      .toggle-description {
+        font-size: 13px;
+        flex: 1 1 auto;
+        margin-top: 4px;
+      }
+      
+      .toggle-status {
+        margin-left: auto;
+        font-size: 12px;
+      }
+    }
+    
+    /* Approved emails display */
+    .email-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin: 4px;
+    }
+    
+    .email-tag button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    
+    .email-tag button:active {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* Alert boxes */
+    .alert-info {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    
+    .alert-info strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .alert-success {
+      padding: 16px;
+      background: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    
+    .alert-success strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🦃 FlockPro Admin</h1>
+      <div class="header-actions">
+        <span><strong id="adminEmail"></strong></span>
+        <button onclick="logout()" class="btn btn-secondary">Logout</button>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Users</h3>
+        <div class="value" id="totalUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Active</h3>
+        <div class="value" id="activeUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Frozen</h3>
+        <div class="value" id="frozenUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Flocks</h3>
+        <div class="value" id="totalFlocks">0</div>
+      </div>
+    </div>
+    
+    <!-- Approved Emails Section with Toggle -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📧 Invite-Only Registration</h3>
+        <p>Control who can create new accounts</p>
+      </div>
+      
+      <div class="card-body">
+        <!-- TOGGLE CONTROL -->
+        <div class="toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="inviteOnlyToggle" onchange="toggleInviteOnlyMode()">
+            <span class="toggle-slider"></span>
+          </label>
+          
+          <div style="flex: 1;">
+            <div class="toggle-label">Invite-Only Mode</div>
+            <div class="toggle-description" id="toggleDescription">
+              When enabled, only approved emails can register
+            </div>
+          </div>
+          
+          <div class="toggle-status disabled" id="toggleStatus">
+            OFF
+          </div>
+        </div>
+        
+        <!-- APPROVED EMAILS LIST (only shows when toggle is ON) -->
+        <div id="approvedEmailsSection" style="display: none;">
+          <div class="alert-info">
+            <strong>ℹ️ Invite-Only Mode Active</strong>
+            <span style="color: #78350f;">Only emails on this list can create new accounts.</span>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <button onclick="showAddEmailModal()" class="btn btn-primary" style="width: 100%;">
+              ➕ Add Approved Email
+            </button>
+          </div>
+          
+          <div id="approvedEmailsList" style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <!-- Emails will be rendered here -->
+          </div>
+        </div>
+        
+        <!-- PUBLIC REGISTRATION MESSAGE (only shows when toggle is OFF) -->
+        <div id="publicRegistrationMessage" class="alert-success">
+          <strong>🌐 Public Registration Active</strong>
+          <span style="color: #1e3a8a;">Anyone can create a new account.</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Users Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3>👥 User Management</h3>
+      </div>
+      
+      <div class="card-body">
+        <!-- Controls -->
+        <div class="controls">
+          <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="🔍 Search users..." 
+                   oninput="filterUsers()">
+          </div>
+          
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterByStatus('all')">All</button>
+            <button class="filter-tab" onclick="filterByStatus('active')">Active</button>
+            <button class="filter-tab" onclick="filterByStatus('frozen')">Frozen</button>
+            <button class="filter-tab" onclick="filterByStatus('suspended')">Suspended</button>
+          </div>
+          
+          <div class="control-buttons">
+            <button onclick="refreshData()" class="btn btn-secondary">🔄</button>
+            <button onclick="exportToCSV()" class="btn btn-secondary">📥 Export</button>
+          </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div class="bulk-actions">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" class="user-checkbox">
+          <label for="selectAll">Select All</label>
+          <button id="bulkFreezeBtn" onclick="bulkFreeze()" class="btn btn-secondary" disabled>
+            ❄️ Freeze (<span id="freezeCount">0</span>)
+          </button>
+          <button id="bulkDeleteBtn" onclick="bulkDelete()" class="btn btn-danger" disabled>
+            🗑️ Delete (<span id="deleteCount">0</span>)
+          </button>
+        </div>
+        
+        <!-- Mobile User Cards -->
+        <div class="user-cards" id="userCards">
+          <div class="empty-state">Loading users...</div>
+        </div>
+        
+        <!-- Desktop Table -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px;"></th>
+                <th>Email</th>
+                <th>Farm / Location</th>
+                <th>Flocks</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="8" class="empty-state">
+                  <div>Loading users...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- User Details Modal -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>👤 User Details</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="userDetailsContent"></div>
+      <div style="margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="openEditUserModal()" class="btn btn-primary" style="flex: 1;">✏️ Edit</button>
+        <button onclick="closeModal()" class="btn btn-secondary" style="flex: 1;">Close</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Edit User Modal -->
+  <div id="editUserModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>✏️ Edit User</h2>
+        <button class="modal-close" onclick="closeEditUserModal()">✕</button>
+      </div>
+      <form id="editUserForm" onsubmit="saveUserEdits(event)">
+        <div class="form-group">
+          <label>👤 Full Name</label>
+          <input type="text" id="editUserName" placeholder="e.g., John Smith">
+          <small>Optional - displayed in dashboard</small>
+        </div>
+        
+        <div class="form-group">
+          <label>📍 Location</label>
+          <input type="text" id="editLocation" placeholder="e.g., Carpenter, SD">
+          <small>Optional - city, state</small>
+        </div>
+        
+        <div class="form-group">
+          <label>📞 Phone</label>
+          <input type="tel" id="editPhone" placeholder="e.g., (555) 123-4567">
+          <small>Optional - contact number</small>
+        </div>
+        
+        <div class="form-group">
+          <label>📝 Admin Notes</label>
+          <textarea id="editAdminNotes" placeholder="Internal notes (admins only)"></textarea>
+          <small>Private - not visible to user</small>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">💾 Save</button>
+          <button type="button" onclick="closeEditUserModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Confirm Dialog -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 id="confirmTitle">Confirm</h2>
+        <button class="modal-close" onclick="closeConfirmModal()">✕</button>
+      </div>
+      <p id="confirmMessage" style="margin-bottom: 20px; color: #64748b; font-size: 14px;"></p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="confirmAction()" class="btn btn-danger" style="flex: 1;">Confirm</button>
+        <button onclick="closeConfirmModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Email Modal -->
+  <div id="addEmailModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>➕ Add Email</h2>
+        <button class="modal-close" onclick="closeAddEmailModal()">✕</button>
+      </div>
+      <form onsubmit="addApprovedEmail(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" 
+                 id="newApprovedEmail" 
+                 required 
+                 placeholder="user@example.com">
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Add</button>
+          <button type="button" onclick="closeAddEmailModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+  
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen show">
+    <div class="login-box">
+      <h2>🦃 FlockPro Admin</h2>
+      <p>Sign in to access dashboard</p>
+      
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" 
+                 id="loginEmail" 
+                 required
+                 autocomplete="email"
+                 placeholder="admin@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" 
+                 id="loginPassword" 
+                 required
+                 autocomplete="current-password"
+                 placeholder="••••••••">
+        </div>
+        <div id="loginError" style="display: none; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; margin-bottom: 16px; font-size: 13px;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;" id="loginBtn">
+          Login
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    // ============================================
+    // FIREBASE CONFIGURATION
+    // ============================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFKLK7wlRxizlueXfNiHbT2qidp6KT7AY",
+      authDomain: "turkey-tracker-23a04.firebaseapp.com",
+      projectId: "turkey-tracker-23a04",
+      storageBucket: "turkey-tracker-23a04.appspot.com",
+      messagingSenderId: "295840324959",
+      appId: "1:295840324959:web:8d679b6a8323b6494a6aea"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    
+    // ============================================
+    // GLOBAL STATE
+    // ============================================
+    let allUsers = [];
+    let filteredUsers = [];
+    let currentFilter = 'all';
+    let selectedUsers = new Set();
+    let confirmCallback = null;
+    let inviteOnlyEnabled = false;
+    
+    // ============================================
+    // AUTHENTICATION
+    // ============================================
+    const AUTHORIZED_ADMINS = ['flockproapp@gmail.com'];
+    
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        if (!AUTHORIZED_ADMINS.includes(user.email)) {
+          auth.signOut();
+          const loginError = document.getElementById('loginError');
+          loginError.style.display = 'block';
+          loginError.textContent = '❌ Access Denied';
+          return;
+        }
+        
+        document.getElementById('loginScreen').classList.remove('show');
+        document.getElementById('adminEmail').textContent = user.email;
+        loadApprovedEmails();
+        loadInviteOnlyMode();
+        loadAllUsers();
+      } else {
+        document.getElementById('loginScreen').classList.add('show');
+      }
+    });
+    
+    function handleLogin(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const loginError = document.getElementById('loginError');
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+      loginError.style.display = 'none';
+      
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          loginBtn.textContent = 'Login';
+          loginBtn.disabled = false;
+        })
+        .catch((error) => {
+          loginError.style.display = 'block';
+          loginError.textContent = '❌ ' + getErrorMessage(error.code);
+          loginBtn.textContent = 'Login';
+          loginBtn.disabled = false;
+        });
+    }
+    
+    function getErrorMessage(errorCode) {
+      switch(errorCode) {
+        case 'auth/invalid-email':
+          return 'Invalid email';
+        case 'auth/user-not-found':
+          return 'No account found';
+        case 'auth/wrong-password':
+          return 'Incorrect password';
+        case 'auth/invalid-credential':
+          return 'Invalid credentials';
+        case 'auth/too-many-requests':
+          return 'Too many attempts';
+        default:
+          return 'Login failed';
+      }
+    }
+    
+    function logout() {
+      auth.signOut().then(() => {
+        showToast('Logged out', 'success');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+      });
+    }
+    
+    // ============================================
+    // INVITE-ONLY MODE TOGGLE
+    // ============================================
+    
+    async function loadInviteOnlyMode() {
+      try {
+        const doc = await db.collection('admin').doc('settings').get();
+        if (doc.exists) {
+          inviteOnlyEnabled = doc.data().inviteOnlyMode || false;
+        } else {
+          inviteOnlyEnabled = false;
+          await db.collection('admin').doc('settings').set({ 
+            inviteOnlyMode: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        
+        document.getElementById('inviteOnlyToggle').checked = inviteOnlyEnabled;
+        updateInviteOnlyUI();
+        
+      } catch (error) {
+        console.error('Error loading invite-only mode:', error);
+        showToast('Error loading settings', 'error');
+      }
+    }
+    
+    async function toggleInviteOnlyMode() {
+      const toggle = document.getElementById('inviteOnlyToggle');
+      inviteOnlyEnabled = toggle.checked;
+      
+      try {
+        await db.collection('admin').doc('settings').set({
+          inviteOnlyMode: inviteOnlyEnabled,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        updateInviteOnlyUI();
+        
+        if (inviteOnlyEnabled) {
+          showToast('✅ Invite-only enabled', 'success');
+        } else {
+          showToast('⚠️ Public registration enabled', 'warning');
+        }
+        
+      } catch (error) {
+        console.error('Error toggling invite-only mode:', error);
+        showToast('Error saving', 'error');
+        toggle.checked = !inviteOnlyEnabled;
+        inviteOnlyEnabled = !inviteOnlyEnabled;
+      }
+    }
+    
+    function updateInviteOnlyUI() {
+      const approvedEmailsSection = document.getElementById('approvedEmailsSection');
+      const publicMessage = document.getElementById('publicRegistrationMessage');
+      const statusBadge = document.getElementById('toggleStatus');
+      const description = document.getElementById('toggleDescription');
+      
+      if (inviteOnlyEnabled) {
+        approvedEmailsSection.style.display = 'block';
+        publicMessage.style.display = 'none';
+        statusBadge.className = 'toggle-status enabled';
+        statusBadge.textContent = 'ON';
+        description.textContent = 'Only approved emails can register';
+      } else {
+        approvedEmailsSection.style.display = 'none';
+        publicMessage.style.display = 'block';
+        statusBadge.className = 'toggle-status disabled';
+        statusBadge.textContent = 'OFF';
+        description.textContent = 'Anyone can register';
+      }
+    }
+    
+    // ============================================
+    // APPROVED EMAILS MANAGEMENT
+    // ============================================
+    let approvedEmails = [];
+    
+    async function loadApprovedEmails() {
+      try {
+        const doc = await db.collection('admin').doc('approvedEmails').get();
+        if (doc.exists) {
+          approvedEmails = doc.data().emails || [];
+        } else {
+          approvedEmails = [];
+          await db.collection('admin').doc('approvedEmails').set({ emails: [] });
+        }
+        renderApprovedEmails();
+      } catch (error) {
+        console.error('Error loading approved emails:', error);
+        if (error.code === 'permission-denied') {
+          showToast('⚠️ Check Firestore rules', 'error');
+        }
+        approvedEmails = [];
+        renderApprovedEmails();
+      }
+    }
+    
+    function renderApprovedEmails() {
+      const container = document.getElementById('approvedEmailsList');
+      
+      if (approvedEmails.length === 0) {
+        container.innerHTML = '<div style="color: #94a3b8; font-style: italic; padding: 12px;">No approved emails yet</div>';
+        return;
+      }
+      
+      container.innerHTML = approvedEmails.map(email => `
+        <div class="email-tag">
+          <span>📧 ${email}</span>
+          <button onclick="removeApprovedEmail('${email}')" type="button" title="Remove">×</button>
+        </div>
+      `).join('');
+    }
+    
+    function showAddEmailModal() {
+      document.getElementById('newApprovedEmail').value = '';
+      document.getElementById('addEmailModal').classList.add('show');
+    }
+    
+    function closeAddEmailModal() {
+      document.getElementById('addEmailModal').classList.remove('show');
+    }
+    
+    async function addApprovedEmail(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('newApprovedEmail').value.trim().toLowerCase();
+      
+      if (!email) {
+        showToast('Enter an email', 'error');
+        return;
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showToast('Invalid email', 'error');
+        return;
+      }
+      
+      if (approvedEmails.includes(email)) {
+        showToast('Already approved', 'warning');
+        return;
+      }
+      
+      try {
+        approvedEmails.push(email);
+        await db.collection('admin').doc('approvedEmails').set({
+          emails: approvedEmails,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        renderApprovedEmails();
+        closeAddEmailModal();
+        showToast(`✅ ${email} approved`, 'success');
+      } catch (error) {
+        console.error('Error adding email:', error);
+        approvedEmails = approvedEmails.filter(e => e !== email);
+        showToast('Error adding email', 'error');
+      }
+    }
+    
+    async function removeApprovedEmail(email) {
+      if (!confirm(`Remove ${email}?`)) return;
+      
+      try {
+        approvedEmails = approvedEmails.filter(e => e !== email);
+        await db.collection('admin').doc('approvedEmails').set({
+          emails: approvedEmails,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        renderApprovedEmails();
+        showToast(`Removed ${email}`, 'success');
+      } catch (error) {
+        console.error('Error removing email:', error);
+        showToast('Error removing email', 'error');
+      }
+    }
+    
+    // ============================================
+    // DATA LOADING
+    // ============================================
+    async function loadAllUsers() {
+      try {
+        showToast('Loading...', 'info');
+        
+        const usersSnapshot = await db.collection('users').get();
+        allUsers = [];
+        
+        for (const doc of usersSnapshot.docs) {
+          const userData = doc.data();
+          
+          const flocksSnapshot = await db
+            .collection('users')
+            .doc(doc.id)
+            .collection('flocks')
+            .get();
+          
+          const user = {
+            id: doc.id,
+            email: userData.email || 'N/A',
+            farmName: userData.farmName || 'Unknown',
+            createdAt: userData.createdAt?.toDate() || new Date(),
+            lastLogin: userData.lastLogin?.toDate() || null,
+            status: userData.status || 'active',
+            hasPin: userData.hasPin || false,
+            flockCount: flocksSnapshot.size,
+            permissions: userData.permissions || 'full',
+            userName: userData.userName || '',
+            location: userData.location || '',
+            phone: userData.phone || '',
+            adminNotes: userData.adminNotes || ''
+          };
+          
+          allUsers.push(user);
+        }
+        
+        allUsers.sort((a, b) => b.createdAt - a.createdAt);
+        
+        updateStats();
+        filterUsers();
+        showToast('Loaded successfully', 'success');
+        
+      } catch (error) {
+        console.error('Error loading users:', error);
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function updateStats() {
+      const totalUsers = allUsers.length;
+      const activeUsers = allUsers.filter(u => u.status === 'active').length;
+      const frozenUsers = allUsers.filter(u => u.status === 'frozen').length;
+      const suspendedUsers = allUsers.filter(u => u.status === 'suspended').length;
+      const totalFlocks = allUsers.reduce((sum, u) => sum + u.flockCount, 0);
+      
+      document.getElementById('totalUsers').textContent = totalUsers;
+      document.getElementById('activeUsers').textContent = activeUsers;
+      document.getElementById('frozenUsers').textContent = frozenUsers + suspendedUsers;
+      document.getElementById('totalFlocks').textContent = totalFlocks;
+    }
+    
+    // ============================================
+    // FILTERING & SEARCH
+    // ============================================
+    function filterUsers() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      
+      filteredUsers = allUsers.filter(user => {
+        if (currentFilter !== 'all' && user.status !== currentFilter) {
+          return false;
+        }
+        
+        if (searchTerm) {
+          return user.email.toLowerCase().includes(searchTerm) ||
+                 user.farmName.toLowerCase().includes(searchTerm) ||
+                 user.id.toLowerCase().includes(searchTerm);
+        }
+        
+        return true;
+      });
+      
+      renderUserCards();
+      renderUsersTable();
+    }
+    
+    function filterByStatus(status) {
+      currentFilter = status;
+      
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      filterUsers();
+    }
+    
+    // ============================================
+    // MOBILE CARD RENDERING
+    // ============================================
+    function renderUserCards() {
+      const container = document.getElementById('userCards');
+      
+      if (filteredUsers.length === 0) {
+        container.innerHTML = '<div class="empty-state">No users found</div>';
+        return;
+      }
+      
+      container.innerHTML = filteredUsers.map(user => {
+        let displayName = user.farmName;
+        if (user.userName && user.location) {
+          displayName = `${user.userName} - ${user.location}`;
+        } else if (user.userName) {
+          displayName = `${user.userName} (${user.farmName})`;
+        } else if (user.location) {
+          displayName = `${user.farmName} (${user.location})`;
+        }
+        
+        let actionButtons = '';
+        if (user.status === 'suspended') {
+          actionButtons = `
+            <button class="action-btn action-btn-unfreeze" onclick="unsuspendUser('${user.id}')">Unsuspend</button>
+          `;
+        } else if (user.status === 'frozen') {
+          actionButtons = `
+            <button class="action-btn action-btn-unfreeze" onclick="unfreezeUser('${user.id}')">Unfreeze</button>
+            <button class="action-btn action-btn-delete" onclick="suspendUser('${user.id}')" style="background: #fed7aa; color: #92400e;">Suspend</button>
+          `;
+        } else {
+          actionButtons = `
+            <button class="action-btn action-btn-freeze" onclick="freezeUser('${user.id}')">Freeze</button>
+            <button class="action-btn action-btn-delete" onclick="suspendUser('${user.id}')" style="background: #fed7aa; color: #92400e;">Suspend</button>
+          `;
+        }
+        
+        return `
+          <div class="user-card">
+            <div class="user-card-header">
+              <div class="user-card-info">
+                <div class="user-card-email">${user.email}</div>
+                <div class="user-card-farm">${displayName}</div>
+                <span class="status-badge status-${user.status}">${user.status}</span>
+              </div>
+              <input type="checkbox" class="user-checkbox" value="${user.id}" onchange="toggleUserSelection('${user.id}')">
+            </div>
+            
+            <div class="user-card-meta">
+              <div class="user-card-meta-item">
+                <div class="user-card-meta-label">Flocks</div>
+                <div class="user-card-meta-value">${user.flockCount}</div>
+              </div>
+              <div class="user-card-meta-item">
+                <div class="user-card-meta-label">Created</div>
+                <div class="user-card-meta-value">${formatDate(user.createdAt)}</div>
+              </div>
+              <div class="user-card-meta-item">
+                <div class="user-card-meta-label">Last Login</div>
+                <div class="user-card-meta-value">${user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</div>
+              </div>
+            </div>
+            
+            <div class="user-card-actions">
+              <button class="action-btn action-btn-view" onclick="viewUser('${user.id}')">View</button>
+              ${actionButtons}
+              <button class="action-btn action-btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // ============================================
+    // DESKTOP TABLE RENDERING
+    // ============================================
+    function renderUsersTable() {
+      const tbody = document.getElementById('usersTableBody');
+      
+      if (filteredUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No users found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filteredUsers.map(user => {
+        let displayName = user.farmName;
+        if (user.userName && user.location) {
+          displayName = `${user.userName} - ${user.location}`;
+        } else if (user.userName) {
+          displayName = `${user.userName} (${user.farmName})`;
+        } else if (user.location) {
+          displayName = `${user.farmName} (${user.location})`;
+        }
+        
+        let actionButtons = '';
+        if (user.status === 'suspended') {
+          actionButtons = `<button class="action-btn action-btn-unfreeze" onclick="unsuspendUser('${user.id}')">Unsuspend</button>`;
+        } else if (user.status === 'frozen') {
+          actionButtons = `
+            <button class="action-btn action-btn-unfreeze" onclick="unfreezeUser('${user.id}')">Unfreeze</button>
+            <button class="action-btn action-btn-delete" onclick="suspendUser('${user.id}')" style="background: #fed7aa; color: #92400e;">Suspend</button>
+          `;
+        } else {
+          actionButtons = `
+            <button class="action-btn action-btn-freeze" onclick="freezeUser('${user.id}')">Freeze</button>
+            <button class="action-btn action-btn-delete" onclick="suspendUser('${user.id}')" style="background: #fed7aa; color: #92400e;">Suspend</button>
+          `;
+        }
+        
+        return `
+        <tr>
+          <td><input type="checkbox" class="user-checkbox" value="${user.id}" onchange="toggleUserSelection('${user.id}')"></td>
+          <td>${user.email}</td>
+          <td>${displayName}</td>
+          <td>${user.flockCount}</td>
+          <td>${formatDate(user.createdAt)}</td>
+          <td>${user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</td>
+          <td><span class="status-badge status-${user.status}">${user.status}</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn action-btn-view" onclick="viewUser('${user.id}')">View</button>
+              ${actionButtons}
+              <button class="action-btn action-btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      }).join('');
+    }
+    
+    // ============================================
+    // USER ACTIONS
+    // ============================================
+    async function viewUser(userId) {
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return;
+      
+      window.currentViewUserId = userId;
+      
+      const content = `
+        <div class="info-grid">
+          <div class="info-row">
+            <div class="info-label">User ID</div>
+            <div class="info-value">${user.id}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Email</div>
+            <div class="info-value">${user.email}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Farm Name</div>
+            <div class="info-value">${user.farmName}</div>
+          </div>
+          ${user.userName ? `
+          <div class="info-row">
+            <div class="info-label">👤 Full Name</div>
+            <div class="info-value"><strong>${user.userName}</strong></div>
+          </div>
+          ` : ''}
+          ${user.location ? `
+          <div class="info-row">
+            <div class="info-label">📍 Location</div>
+            <div class="info-value"><strong>${user.location}</strong></div>
+          </div>
+          ` : ''}
+          ${user.phone ? `
+          <div class="info-row">
+            <div class="info-label">📞 Phone</div>
+            <div class="info-value"><strong>${user.phone}</strong></div>
+          </div>
+          ` : ''}
+          <div class="info-row">
+            <div class="info-label">Flocks</div>
+            <div class="info-value">${user.flockCount}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Status</div>
+            <div class="info-value"><span class="status-badge status-${user.status}">${user.status}</span></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Permissions</div>
+            <div class="info-value">${user.permissions}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Has PIN</div>
+            <div class="info-value">${user.hasPin ? '✅ Yes' : '❌ No'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Created</div>
+            <div class="info-value">${formatDate(user.createdAt)}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Last Login</div>
+            <div class="info-value">${user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</div>
+          </div>
+          ${user.adminNotes ? `
+          <div class="info-row">
+            <div class="info-label">📝 Admin Notes</div>
+            <div class="info-value" style="font-style: italic; color: #64748b;">${user.adminNotes}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+      
+      document.getElementById('userDetailsContent').innerHTML = content;
+      document.getElementById('userModal').classList.add('show');
+    }
+    
+    function openEditUserModal() {
+      const userId = window.currentViewUserId;
+      if (!userId) return;
+      
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return;
+      
+      document.getElementById('editUserName').value = user.userName || '';
+      document.getElementById('editLocation').value = user.location || '';
+      document.getElementById('editPhone').value = user.phone || '';
+      document.getElementById('editAdminNotes').value = user.adminNotes || '';
+      
+      closeModal();
+      document.getElementById('editUserModal').classList.add('show');
+    }
+    
+    function closeEditUserModal() {
+      document.getElementById('editUserModal').classList.remove('show');
+    }
+    
+    async function saveUserEdits(event) {
+      event.preventDefault();
+      
+      const userId = window.currentViewUserId;
+      if (!userId) return;
+      
+      const userName = document.getElementById('editUserName').value.trim();
+      const location = document.getElementById('editLocation').value.trim();
+      const phone = document.getElementById('editPhone').value.trim();
+      const adminNotes = document.getElementById('editAdminNotes').value.trim();
+      
+      try {
+        await db.collection('users').doc(userId).update({
+          userName: userName,
+          location: location,
+          phone: phone,
+          adminNotes: adminNotes,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        const user = allUsers.find(u => u.id === userId);
+        if (user) {
+          user.userName = userName;
+          user.location = location;
+          user.phone = phone;
+          user.adminNotes = adminNotes;
+        }
+        
+        closeEditUserModal();
+        showToast('✅ Updated', 'success');
+        renderUserCards();
+        renderUsersTable();
+        
+      } catch (error) {
+        console.error('Error updating user:', error);
+        showToast('Error updating', 'error');
+      }
+    }
+    
+    async function freezeUser(userId) {
+      showConfirmDialog(
+        '❄️ Freeze Account',
+        'Prevent user from entering new data?',
+        async () => {
+          try {
+            await db.collection('users').doc(userId).update({
+              status: 'frozen',
+              frozenAt: firebase.firestore.FieldValue.serverTimestamp(),
+              permissions: 'read-only'
+            });
+            
+            showToast('Account frozen', 'success');
+            loadAllUsers();
+          } catch (error) {
+            showToast('Error freezing', 'error');
+          }
+        }
+      );
+    }
+    
+    async function unfreezeUser(userId) {
+      try {
+        await db.collection('users').doc(userId).update({
+          status: 'active',
+          frozenAt: null,
+          permissions: 'full'
+        });
+        
+        showToast('Account unfrozen', 'success');
+        loadAllUsers();
+      } catch (error) {
+        showToast('Error unfreezing', 'error');
+      }
+    }
+    
+    async function suspendUser(userId) {
+      showConfirmDialog(
+        '⚠️ Suspend Account',
+        'Completely block user access?',
+        async () => {
+          try {
+            await db.collection('users').doc(userId).update({
+              status: 'suspended',
+              suspendedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              permissions: 'none'
+            });
+            
+            showToast('Account suspended', 'success');
+            loadAllUsers();
+          } catch (error) {
+            showToast('Error suspending', 'error');
+          }
+        }
+      );
+    }
+    
+    async function unsuspendUser(userId) {
+      try {
+        await db.collection('users').doc(userId).update({
+          status: 'active',
+          suspendedAt: null,
+          permissions: 'full'
+        });
+        
+        showToast('Account unsuspended', 'success');
+        loadAllUsers();
+      } catch (error) {
+        showToast('Error unsuspending', 'error');
+      }
+    }
+    
+    async function deleteUser(userId) {
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return;
+      
+      showConfirmDialog(
+        '🗑️ Delete Account',
+        `PERMANENTLY delete ${user.email} and ${user.flockCount} flocks?`,
+        async () => {
+          try {
+            const flocksSnapshot = await db
+              .collection('users')
+              .doc(userId)
+              .collection('flocks')
+              .get();
+            
+            const batch = db.batch();
+            flocksSnapshot.docs.forEach(doc => {
+              batch.delete(doc.ref);
+            });
+            
+            batch.delete(db.collection('users').doc(userId));
+            await batch.commit();
+            
+            showToast('Account deleted', 'success');
+            loadAllUsers();
+          } catch (error) {
+            showToast('Error deleting', 'error');
+          }
+        }
+      );
+    }
+    
+    // ============================================
+    // BULK OPERATIONS
+    // ============================================
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll');
+      const checkboxes = document.querySelectorAll('.user-checkbox');
+      
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+        const userId = cb.value;
+        if (selectAll.checked) {
+          selectedUsers.add(userId);
+        } else {
+          selectedUsers.delete(userId);
+        }
+      });
+      
+      updateBulkButtons();
+    }
+    
+    function toggleUserSelection(userId) {
+      if (selectedUsers.has(userId)) {
+        selectedUsers.delete(userId);
+      } else {
+        selectedUsers.add(userId);
+      }
+      
+      updateBulkButtons();
+    }
+    
+    function updateBulkButtons() {
+      const count = selectedUsers.size;
+      const freezeBtn = document.getElementById('bulkFreezeBtn');
+      const deleteBtn = document.getElementById('bulkDeleteBtn');
+      
+      freezeBtn.disabled = count === 0;
+      deleteBtn.disabled = count === 0;
+      
+      document.getElementById('freezeCount').textContent = count;
+      document.getElementById('deleteCount').textContent = count;
+    }
+    
+    function bulkFreeze() {
+      showConfirmDialog(
+        '❄️ Bulk Freeze',
+        `Freeze ${selectedUsers.size} accounts?`,
+        async () => {
+          try {
+            const batch = db.batch();
+            
+            selectedUsers.forEach(userId => {
+              const userRef = db.collection('users').doc(userId);
+              batch.update(userRef, {
+                status: 'frozen',
+                frozenAt: firebase.firestore.FieldValue.serverTimestamp(),
+                permissions: 'read-only'
+              });
+            });
+            
+            await batch.commit();
+            
+            showToast(`${selectedUsers.size} frozen`, 'success');
+            selectedUsers.clear();
+            document.getElementById('selectAll').checked = false;
+            loadAllUsers();
+          } catch (error) {
+            showToast('Error freezing', 'error');
+          }
+        }
+      );
+    }
+    
+    function bulkDelete() {
+      showConfirmDialog(
+        '🗑️ Bulk Delete',
+        `PERMANENTLY delete ${selectedUsers.size} accounts?`,
+        async () => {
+          try {
+            for (const userId of selectedUsers) {
+              const flocksSnapshot = await db
+                .collection('users')
+                .doc(userId)
+                .collection('flocks')
+                .get();
+              
+              const batch = db.batch();
+              flocksSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+              });
+              
+              batch.delete(db.collection('users').doc(userId));
+              await batch.commit();
+            }
+            
+            showToast(`${selectedUsers.size} deleted`, 'success');
+            selectedUsers.clear();
+            document.getElementById('selectAll').checked = false;
+            loadAllUsers();
+          } catch (error) {
+            showToast('Error deleting', 'error');
+          }
+        }
+      );
+    }
+    
+    // ============================================
+    // EXPORT
+    // ============================================
+    function exportToCSV() {
+      const headers = ['Email', 'Farm', 'Flocks', 'Status', 'Created', 'Last Login', 'ID'];
+      const rows = filteredUsers.map(user => [
+        user.email,
+        user.farmName,
+        user.flockCount,
+        user.status,
+        formatDate(user.createdAt),
+        user.lastLogin ? formatDate(user.lastLogin) : 'Never',
+        user.id
+      ]);
+      
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `flockpro-users-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      showToast('CSV exported', 'success');
+    }
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    function formatDate(date) {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    
+    function refreshData() {
+      loadAllUsers();
+    }
+    
+    // ============================================
+    // MODALS
+    // ============================================
+    function closeModal() {
+      document.getElementById('userModal').classList.remove('show');
+    }
+    
+    function showConfirmDialog(title, message, callback) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      confirmCallback = callback;
+      document.getElementById('confirmModal').classList.add('show');
+    }
+    
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('show');
+      confirmCallback = null;
+    }
+    
+    function confirmAction() {
+      if (confirmCallback) {
+        confirmCallback();
+        closeConfirmModal();
+      }
+    }
+    
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Close modals on overlay click
+    document.getElementById('userModal').addEventListener('click', (e) => {
+      if (e.target.id === 'userModal') closeModal();
+    });
+    
+    document.getElementById('editUserModal').addEventListener('click', (e) => {
+      if (e.target.id === 'editUserModal') closeEditUserModal();
+    });
+    
+    document.getElementById('confirmModal').addEventListener('click', (e) => {
+      if (e.target.id === 'confirmModal') closeConfirmModal();
+    });
+    
+    document.getElementById('addEmailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'addEmailModal') closeAddEmailModal();
+    });
+  </script>
+</body>
+</html>
