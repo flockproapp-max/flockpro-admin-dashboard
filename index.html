@@ -2131,32 +2131,193 @@
       const user = allUsers.find(u => u.id === userId);
       if (!user) return;
       
-      showConfirmDialog(
-        '🗑️ Delete Account',
-        `PERMANENTLY delete ${user.email} and ${user.flockCount} flocks?`,
-        async () => {
-          try {
-            const flocksSnapshot = await db
-              .collection('users')
-              .doc(userId)
-              .collection('flocks')
-              .get();
-            
-            const batch = db.batch();
-            flocksSnapshot.docs.forEach(doc => {
-              batch.delete(doc.ref);
-            });
-            
-            batch.delete(db.collection('users').doc(userId));
-            await batch.commit();
-            
-            showToast('Account deleted', 'success');
-            loadAllUsers();
-          } catch (error) {
-            showToast('Error deleting', 'error');
-          }
+      // Create custom modal for Firebase redirect
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+      `;
+      
+      modal.innerHTML = `
+        <div style="
+          background: white;
+          padding: 32px;
+          border-radius: 16px;
+          max-width: 500px;
+          width: 100%;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        ">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="
+              width: 64px;
+              height: 64px;
+              background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 16px;
+              font-size: 32px;
+            ">🗑️</div>
+            <h3 style="
+              font-size: 24px;
+              font-weight: 700;
+              color: #1a202c;
+              margin-bottom: 8px;
+            ">Delete Account</h3>
+          </div>
+          
+          <div style="
+            background: #f8fafc;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+          ">
+            <p style="
+              font-size: 15px;
+              color: #1e293b;
+              margin-bottom: 12px;
+              font-weight: 600;
+            ">Account to delete:</p>
+            <p style="
+              font-size: 14px;
+              color: #64748b;
+              margin-bottom: 4px;
+            "><strong>Email:</strong> ${user.email}</p>
+            <p style="
+              font-size: 14px;
+              color: #64748b;
+              margin-bottom: 4px;
+            "><strong>Farm:</strong> ${user.farmName}</p>
+            <p style="
+              font-size: 14px;
+              color: #64748b;
+            "><strong>Flocks:</strong> ${user.flockCount}</p>
+          </div>
+          
+          <p style="
+            font-size: 15px;
+            color: #475569;
+            margin-bottom: 20px;
+            line-height: 1.6;
+          ">
+            This will delete the user's Firestore data and flocks, then redirect you to Firebase Authentication 
+            to complete the deletion by removing their authentication account.
+          </p>
+          
+          <div style="
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+          ">
+            <button 
+              id="cancelDeleteBtn"
+              style="
+                flex: 1;
+                padding: 14px 24px;
+                background: #f1f5f9;
+                color: #475569;
+                border: none;
+                border-radius: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onmouseover="this.style.background='#e2e8f0'"
+              onmouseout="this.style.background='#f1f5f9'"
+            >
+              Cancel
+            </button>
+            <button 
+              id="confirmDeleteBtn"
+              style="
+                flex: 1;
+                padding: 14px 24px;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+              "
+              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(239, 68, 68, 0.4)'"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(239, 68, 68, 0.3)'"
+            >
+              Delete & Go to Firebase →
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Add event listeners
+      const cancelBtn = modal.querySelector('#cancelDeleteBtn');
+      const confirmBtn = modal.querySelector('#confirmDeleteBtn');
+      
+      cancelBtn.addEventListener('click', () => {
+        modal.remove();
+      });
+      
+      confirmBtn.addEventListener('click', async () => {
+        // Disable button and show loading state
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
+        
+        try {
+          // Delete all flocks first
+          const flocksSnapshot = await db
+            .collection('users')
+            .doc(userId)
+            .collection('flocks')
+            .get();
+          
+          const batch = db.batch();
+          flocksSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          
+          // Delete user document
+          batch.delete(db.collection('users').doc(userId));
+          await batch.commit();
+          
+          showToast('Firestore data deleted! Opening Firebase Auth...', 'success');
+          
+          // Wait a moment for the toast to show
+          setTimeout(() => {
+            // Redirect to Firebase Authentication
+            window.open('https://console.firebase.google.com/u/0/project/turkey-tracker-23a04/authentication/users', '_blank');
+            modal.remove();
+            loadAllUsers(); // Refresh the user list
+          }, 1500);
+          
+        } catch (error) {
+          showToast('Error deleting from Firestore', 'error');
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Delete & Go to Firebase →';
         }
-      );
+      });
+      
+      // Close modal on overlay click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
     }
     
     // ============================================
