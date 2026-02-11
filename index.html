@@ -2,7 +2,7 @@
 <html lang="en">
 <!--
   ╔═══════════════════════════════════════════════════════════════╗
-  ║            FlockPro Admin Dashboard v1.2 - MOBILE             ║
+  ║            FlockPro Admin Dashboard v1.3 - ENHANCED           ║
   ║              Complete User & Data Management System           ║
   ╚═══════════════════════════════════════════════════════════════╝
   
@@ -16,6 +16,9 @@
   - Export user data to CSV
   - Manage approved emails for invite-only registration
   - Toggle invite-only mode ON/OFF
+  - 🆕 System Announcements (broadcast to all users)
+  - 🆕 App Settings Panel (maintenance mode, force updates)
+  - 🆕 Activity Log (track all admin actions)
   
   MOBILE OPTIMIZATIONS:
   - Card layout for users on mobile (instead of table)
@@ -1121,6 +1124,126 @@
       display: block;
       margin-bottom: 4px;
     }
+    
+    /* Announcement Cards */
+    .announcement-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .announcement-card.priority-info {
+      border-left-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .announcement-card.priority-warning {
+      border-left-color: #f59e0b;
+      background: #fef3c7;
+    }
+    
+    .announcement-card.priority-urgent {
+      border-left-color: #ef4444;
+      background: #fee2e2;
+    }
+    
+    .announcement-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .announcement-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a202c;
+    }
+    
+    .announcement-message {
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    
+    .announcement-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: #94a3b8;
+      flex-wrap: wrap;
+    }
+    
+    .announcement-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .priority-badge.info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .priority-badge.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .priority-badge.urgent {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    /* Activity Log Items */
+    .activity-item {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+    }
+    
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    
+    .activity-time {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    
+    .activity-action {
+      color: #334155;
+      line-height: 1.5;
+    }
+    
+    .activity-action strong {
+      color: #667eea;
+      font-weight: 600;
+    }
+    
+    .activity-icon {
+      display: inline-block;
+      margin-right: 6px;
+    }
+    
+    .empty-log {
+      text-align: center;
+      padding: 32px;
+      color: #94a3b8;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -1203,6 +1326,93 @@
         <div id="publicRegistrationMessage" class="alert-success">
           <strong>🌐 Public Registration Active</strong>
           <span style="color: #1e3a8a;">Anyone can create a new account.</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- System Announcements Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3>🔔 System Announcements</h3>
+        <p>Broadcast messages to all users in the main app</p>
+      </div>
+      
+      <div class="card-body">
+        <div style="margin-bottom: 16px;">
+          <button onclick="showAnnouncementModal()" class="btn btn-primary" style="width: 100%;">
+            ➕ Create Announcement
+          </button>
+        </div>
+        
+        <div id="announcementsList">
+          <!-- Announcements will be rendered here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- App Settings Panel -->
+    <div class="card">
+      <div class="card-header">
+        <h3>⚙️ App Settings</h3>
+        <p>Global configuration for the main app</p>
+      </div>
+      
+      <div class="card-body">
+        <!-- Maintenance Mode Toggle -->
+        <div class="toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="maintenanceModeToggle" onchange="toggleMaintenanceMode()">
+            <span class="toggle-slider"></span>
+          </label>
+          
+          <div style="flex: 1;">
+            <div class="toggle-label">Maintenance Mode</div>
+            <div class="toggle-description">
+              When enabled, users see a maintenance message
+            </div>
+          </div>
+          
+          <div class="toggle-status disabled" id="maintenanceStatus">
+            OFF
+          </div>
+        </div>
+        
+        <!-- Minimum App Version -->
+        <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #334155;">
+            Minimum App Version (Force Updates)
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" 
+                   id="minVersionInput" 
+                   placeholder="2.2.7" 
+                   style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <button onclick="updateMinVersion()" class="btn btn-primary">Save</button>
+          </div>
+          <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+            Users with older versions will be prompted to update
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Activity Log -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📊 Activity Log</h3>
+        <p>Track all admin actions for security and compliance</p>
+      </div>
+      
+      <div class="card-body">
+        <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button onclick="loadActivityLog('all')" class="btn btn-secondary">All</button>
+          <button onclick="loadActivityLog('user')" class="btn btn-secondary">User Actions</button>
+          <button onclick="loadActivityLog('settings')" class="btn btn-secondary">Settings</button>
+          <button onclick="loadActivityLog('invite')" class="btn btn-secondary">Invite Mode</button>
+        </div>
+        
+        <div id="activityLogList" style="max-height: 400px; overflow-y: auto;">
+          <!-- Activity log entries will be rendered here -->
         </div>
       </div>
     </div>
@@ -1374,6 +1584,63 @@
     </div>
   </div>
   
+  <!-- Create Announcement Modal -->
+  <div id="announcementModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>🔔 Create Announcement</h2>
+        <button class="modal-close" onclick="closeAnnouncementModal()">✕</button>
+      </div>
+      <form onsubmit="createAnnouncement(event)">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" 
+                 id="announcementTitle" 
+                 required 
+                 maxlength="100"
+                 placeholder="Important Update">
+        </div>
+        
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="announcementMessage" 
+                    required 
+                    rows="4"
+                    maxlength="500"
+                    placeholder="Enter your announcement message here..."
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; font-family: inherit;"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="announcementPriority" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <option value="info">ℹ️ Info (Blue)</option>
+            <option value="warning">⚠️ Warning (Yellow)</option>
+            <option value="urgent">🚨 Urgent (Red)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Expires After (Days)</label>
+          <input type="number" 
+                 id="announcementExpireDays" 
+                 min="1"
+                 max="90"
+                 value="7"
+                 style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+            Announcement will automatically hide after this many days
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">📤 Publish</button>
+          <button type="button" onclick="closeAnnouncementModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <!-- Toast -->
   <div id="toast" class="toast"></div>
   
@@ -1434,6 +1701,9 @@
     let selectedUsers = new Set();
     let confirmCallback = null;
     let inviteOnlyEnabled = false;
+    let announcements = [];
+    let activityLog = [];
+    let currentActivityFilter = 'all';
     
     // ============================================
     // AUTHENTICATION
@@ -1454,6 +1724,9 @@
         document.getElementById('adminEmail').textContent = user.email;
         loadApprovedEmails();
         loadInviteOnlyMode();
+        loadAnnouncements();
+        loadAppSettings();
+        loadActivityLog('all');
         loadAllUsers();
       } else {
         document.getElementById('loginScreen').classList.add('show');
@@ -1547,6 +1820,9 @@
         }, { merge: true });
         
         updateInviteOnlyUI();
+        
+        // Log activity
+        await logActivity('invite', `Invite-only mode: ${inviteOnlyEnabled ? 'ON' : 'OFF'}`);
         
         if (inviteOnlyEnabled) {
           showToast('✅ Invite-only enabled', 'success');
@@ -1661,6 +1937,9 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
+        // Log activity
+        await logActivity('invite', `Added approved email: ${email}`);
+        
         renderApprovedEmails();
         closeAddEmailModal();
         showToast(`✅ ${email} approved`, 'success');
@@ -1681,12 +1960,318 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
+        // Log activity
+        await logActivity('invite', `Removed approved email: ${email}`);
+        
         renderApprovedEmails();
         showToast(`Removed ${email}`, 'success');
       } catch (error) {
         console.error('Error removing email:', error);
         showToast('Error removing email', 'error');
       }
+    }
+    
+    // ============================================
+    // SYSTEM ANNOUNCEMENTS
+    // ============================================
+    async function loadAnnouncements() {
+      try {
+        const snapshot = await db.collection('admin').doc('announcements').get();
+        if (snapshot.exists) {
+          announcements = snapshot.data().list || [];
+          // Filter out expired announcements
+          const now = new Date();
+          announcements = announcements.filter(a => {
+            if (!a.expiresAt) return true;
+            return new Date(a.expiresAt) > now;
+          });
+        } else {
+          announcements = [];
+        }
+        renderAnnouncements();
+      } catch (error) {
+        console.error('Error loading announcements:', error);
+        announcements = [];
+        renderAnnouncements();
+      }
+    }
+    
+    function renderAnnouncements() {
+      const container = document.getElementById('announcementsList');
+      
+      if (announcements.length === 0) {
+        container.innerHTML = '<div class="empty-log">No active announcements</div>';
+        return;
+      }
+      
+      container.innerHTML = announcements.map((a, index) => `
+        <div class="announcement-card priority-${a.priority}">
+          <div class="announcement-header">
+            <div class="announcement-title">${a.title}</div>
+            <span class="priority-badge ${a.priority}">${a.priority}</span>
+          </div>
+          <div class="announcement-message">${a.message}</div>
+          <div class="announcement-meta">
+            <span>📅 ${formatDate(new Date(a.createdAt))}</span>
+            <span>⏰ Expires: ${formatDate(new Date(a.expiresAt))}</span>
+          </div>
+          <div class="announcement-actions">
+            <button onclick="deleteAnnouncement(${index})" class="action-btn action-btn-delete" style="font-size: 11px;">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showAnnouncementModal() {
+      document.getElementById('announcementTitle').value = '';
+      document.getElementById('announcementMessage').value = '';
+      document.getElementById('announcementPriority').value = 'info';
+      document.getElementById('announcementExpireDays').value = '7';
+      document.getElementById('announcementModal').classList.add('show');
+    }
+    
+    function closeAnnouncementModal() {
+      document.getElementById('announcementModal').classList.remove('show');
+    }
+    
+    async function createAnnouncement(event) {
+      event.preventDefault();
+      
+      const title = document.getElementById('announcementTitle').value.trim();
+      const message = document.getElementById('announcementMessage').value.trim();
+      const priority = document.getElementById('announcementPriority').value;
+      const expireDays = parseInt(document.getElementById('announcementExpireDays').value);
+      
+      if (!title || !message) {
+        showToast('Please fill all fields', 'error');
+        return;
+      }
+      
+      try {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+        
+        const newAnnouncement = {
+          id: Date.now().toString(),
+          title,
+          message,
+          priority,
+          createdAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          createdBy: auth.currentUser.email
+        };
+        
+        announcements.unshift(newAnnouncement);
+        
+        await db.collection('admin').doc('announcements').set({
+          list: announcements,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Log activity
+        await logActivity('announcement', `Created announcement: "${title}"`);
+        
+        renderAnnouncements();
+        closeAnnouncementModal();
+        showToast('✅ Announcement published', 'success');
+      } catch (error) {
+        console.error('Error creating announcement:', error);
+        showToast('Error creating announcement', 'error');
+      }
+    }
+    
+    async function deleteAnnouncement(index) {
+      if (!confirm('Delete this announcement?')) return;
+      
+      try {
+        const deleted = announcements[index];
+        announcements.splice(index, 1);
+        
+        await db.collection('admin').doc('announcements').set({
+          list: announcements,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Log activity
+        await logActivity('announcement', `Deleted announcement: "${deleted.title}"`);
+        
+        renderAnnouncements();
+        showToast('Announcement deleted', 'success');
+      } catch (error) {
+        console.error('Error deleting announcement:', error);
+        showToast('Error deleting announcement', 'error');
+      }
+    }
+    
+    // ============================================
+    // APP SETTINGS
+    // ============================================
+    async function loadAppSettings() {
+      try {
+        const doc = await db.collection('admin').doc('appSettings').get();
+        if (doc.exists) {
+          const settings = doc.data();
+          
+          // Maintenance mode
+          const maintenanceMode = settings.maintenanceMode || false;
+          document.getElementById('maintenanceModeToggle').checked = maintenanceMode;
+          updateMaintenanceUI(maintenanceMode);
+          
+          // Min version
+          document.getElementById('minVersionInput').value = settings.minVersion || '';
+        } else {
+          // Create default settings
+          await db.collection('admin').doc('appSettings').set({
+            maintenanceMode: false,
+            minVersion: '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (error) {
+        console.error('Error loading app settings:', error);
+      }
+    }
+    
+    async function toggleMaintenanceMode() {
+      const toggle = document.getElementById('maintenanceModeToggle');
+      const enabled = toggle.checked;
+      
+      try {
+        await db.collection('admin').doc('appSettings').set({
+          maintenanceMode: enabled,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        updateMaintenanceUI(enabled);
+        
+        // Log activity
+        await logActivity('settings', `Maintenance mode: ${enabled ? 'ON' : 'OFF'}`);
+        
+        if (enabled) {
+          showToast('⚠️ Maintenance mode enabled', 'warning');
+        } else {
+          showToast('✅ Maintenance mode disabled', 'success');
+        }
+      } catch (error) {
+        console.error('Error toggling maintenance mode:', error);
+        showToast('Error saving', 'error');
+        toggle.checked = !enabled;
+      }
+    }
+    
+    function updateMaintenanceUI(enabled) {
+      const statusBadge = document.getElementById('maintenanceStatus');
+      if (enabled) {
+        statusBadge.className = 'toggle-status enabled';
+        statusBadge.textContent = 'ON';
+      } else {
+        statusBadge.className = 'toggle-status disabled';
+        statusBadge.textContent = 'OFF';
+      }
+    }
+    
+    async function updateMinVersion() {
+      const version = document.getElementById('minVersionInput').value.trim();
+      
+      if (!version) {
+        showToast('Enter a version number', 'error');
+        return;
+      }
+      
+      // Basic version format validation (e.g., 2.2.7)
+      if (!/^\d+\.\d+\.\d+$/.test(version)) {
+        showToast('Invalid version format (use x.x.x)', 'error');
+        return;
+      }
+      
+      try {
+        await db.collection('admin').doc('appSettings').set({
+          minVersion: version,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        // Log activity
+        await logActivity('settings', `Minimum version set to: ${version}`);
+        
+        showToast(`✅ Minimum version: ${version}`, 'success');
+      } catch (error) {
+        console.error('Error updating min version:', error);
+        showToast('Error saving version', 'error');
+      }
+    }
+    
+    // ============================================
+    // ACTIVITY LOG
+    // ============================================
+    async function logActivity(category, action) {
+      try {
+        const entry = {
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          category,
+          action,
+          admin: auth.currentUser.email,
+          id: Date.now().toString()
+        };
+        
+        await db.collection('admin').doc('activityLog').collection('entries').add(entry);
+      } catch (error) {
+        console.error('Error logging activity:', error);
+      }
+    }
+    
+    async function loadActivityLog(filter = 'all') {
+      try {
+        currentActivityFilter = filter;
+        
+        let query = db.collection('admin').doc('activityLog').collection('entries')
+          .orderBy('timestamp', 'desc')
+          .limit(50);
+        
+        if (filter !== 'all') {
+          query = query.where('category', '==', filter);
+        }
+        
+        const snapshot = await query.get();
+        activityLog = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        }));
+        
+        renderActivityLog();
+      } catch (error) {
+        console.error('Error loading activity log:', error);
+        activityLog = [];
+        renderActivityLog();
+      }
+    }
+    
+    function renderActivityLog() {
+      const container = document.getElementById('activityLogList');
+      
+      if (activityLog.length === 0) {
+        container.innerHTML = '<div class="empty-log">No activity logged yet</div>';
+        return;
+      }
+      
+      const iconMap = {
+        user: '👤',
+        settings: '⚙️',
+        invite: '📧',
+        announcement: '🔔'
+      };
+      
+      container.innerHTML = activityLog.map(entry => `
+        <div class="activity-item">
+          <div class="activity-time">${formatDateTime(entry.timestamp)}</div>
+          <div class="activity-action">
+            <span class="activity-icon">${iconMap[entry.category] || '📝'}</span>
+            <strong>${entry.admin}</strong> ${entry.action}
+          </div>
+        </div>
+      `).join('');
     }
     
     // ============================================
@@ -2061,11 +2646,15 @@
         'Prevent user from entering new data?',
         async () => {
           try {
+            const user = allUsers.find(u => u.id === userId);
             await db.collection('users').doc(userId).update({
               status: 'frozen',
               frozenAt: firebase.firestore.FieldValue.serverTimestamp(),
               permissions: 'read-only'
             });
+            
+            // Log activity
+            await logActivity('user', `Froze account: ${user?.email || userId}`);
             
             showToast('Account frozen', 'success');
             loadAllUsers();
@@ -2078,11 +2667,15 @@
     
     async function unfreezeUser(userId) {
       try {
+        const user = allUsers.find(u => u.id === userId);
         await db.collection('users').doc(userId).update({
           status: 'active',
           frozenAt: null,
           permissions: 'full'
         });
+        
+        // Log activity
+        await logActivity('user', `Unfroze account: ${user?.email || userId}`);
         
         showToast('Account unfrozen', 'success');
         loadAllUsers();
@@ -2097,11 +2690,15 @@
         'Completely block user access?',
         async () => {
           try {
+            const user = allUsers.find(u => u.id === userId);
             await db.collection('users').doc(userId).update({
               status: 'suspended',
               suspendedAt: firebase.firestore.FieldValue.serverTimestamp(),
               permissions: 'none'
             });
+            
+            // Log activity
+            await logActivity('user', `Suspended account: ${user?.email || userId}`);
             
             showToast('Account suspended', 'success');
             loadAllUsers();
@@ -2295,6 +2892,9 @@
           batch.delete(db.collection('users').doc(userId));
           await batch.commit();
           
+          // Log activity
+          await logActivity('user', `Deleted account: ${user.email} (${user.flockCount} flocks)`);
+          
           showToast('Firestore data deleted! Opening Firebase Auth...', 'success');
           
           // Wait a moment for the toast to show
@@ -2468,8 +3068,21 @@
       });
     }
     
+    function formatDateTime(date) {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
     function refreshData() {
       loadAllUsers();
+      loadAnnouncements();
+      loadActivityLog(currentActivityFilter);
     }
     
     // ============================================
